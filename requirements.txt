@@ -1,5 +1,12 @@
 streamlit
-scikit-learn==1.6.1
-xgboost
 pandas
+numpy
+scikit-learn
 joblib
+matplotlib
+seaborn
+plotly
+scipy
+imblearn
+xgboost
+gradio
