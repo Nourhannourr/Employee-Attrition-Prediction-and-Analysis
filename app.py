@@ -13,7 +13,7 @@ def load_assets():
 
 model, scaler, feature_columns, default_values = load_assets()
 
-THRESHOLD = 25 
+threshold = joblib.load("best_threshold.pkl")
 
 # 2. Prediction Logic
 def predict_attrition(age, monthly_income, overtime, total_working_years, years_at_company, job_satisfaction, env_satisfaction):
@@ -39,7 +39,7 @@ def predict_attrition(age, monthly_income, overtime, total_working_years, years_
     
    
     probability = model.predict_proba(scaled_data)[0][1] * 100
-    prediction = 1 if probability >= THRESHOLD else 0
+    prediction = 1 if probability/100 >= threshold else 0 
     
     if prediction == 1:
         return True, f"⚠️ High Risk: The employee is likely to leave ({probability:.1f}% probability)."
