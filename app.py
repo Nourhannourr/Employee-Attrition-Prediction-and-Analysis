@@ -2,20 +2,17 @@ import streamlit as st
 import pandas as pd
 import joblib
 
-# 1. Load Assets (Model, Scaler, Feature Columns, and Defaults)
 @st.cache_resource 
 def load_assets():
     model = joblib.load("attrition_model.pkl")
     scaler = joblib.load("scaler.pkl")
     feature_columns = joblib.load("feature_columns.pkl")
     default_values = joblib.load("default_values.pkl")
-    return model, scaler, feature_columns, default_values
+    best_threshold = joblib.load("best_threshold.pkl")  
+    return model, scaler, feature_columns, default_values, best_threshold
 
-model, scaler, feature_columns, default_values = load_assets()
+model, scaler, feature_columns, default_values, best_threshold = load_assets()
 
-threshold = joblib.load("best_threshold.pkl")
-
-# 2. Prediction Logic
 def predict_attrition(age, monthly_income, overtime, total_working_years, years_at_company, job_satisfaction, env_satisfaction):
     
     input_row = default_values.copy()
@@ -27,26 +24,19 @@ def predict_attrition(age, monthly_income, overtime, total_working_years, years_
     input_row["YearsAtCompany"] = years_at_company
     input_row["JobSatisfaction"] = job_satisfaction
     input_row["EnvironmentSatisfaction"] = env_satisfaction
-    
-    # Feature Engineering (Salary Experience Ratio)
     input_row["SalaryExperienceRatio"] = monthly_income / (total_working_years + 1)
     
-    # Convert to DataFrame ensuring correct column order
     input_df = pd.DataFrame([input_row])[feature_columns]
-    
-    # Apply Scaling
     scaled_data = scaler.transform(input_df)
     
-   
     probability = model.predict_proba(scaled_data)[0][1] * 100
-    prediction = 1 if probability/100 >= threshold else 0 
+    prediction = 1 if (probability / 100) >= best_threshold else 0  
     
     if prediction == 1:
         return True, f"⚠️ High Risk: The employee is likely to leave ({probability:.1f}% probability)."
     else:
         return False, f"✅ Low Risk: The employee is likely to stay ({probability:.1f}% probability)."
 
-# 3. User Interface Design 
 st.set_page_config(page_title="Employee Attrition Predictor", page_icon="💼", layout="centered")
 st.title("💼 Employee Attrition Predictor")
 st.markdown("Enter the employee's details below to predict their likelihood of leaving the company. This tool uses an advanced XGBoost machine learning model.")
