@@ -13,7 +13,7 @@ def load_assets():
 
 model, scaler, feature_columns, default_values = load_assets()
 
-THRESHOLD = 30 
+THRESHOLD = 25 
 
 # 2. Prediction Logic
 def predict_attrition(age, monthly_income, overtime, total_working_years, years_at_company, job_satisfaction, env_satisfaction):
