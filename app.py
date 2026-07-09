@@ -8,10 +8,12 @@ def load_assets():
     model = joblib.load("attrition_model.pkl")
     scaler = joblib.load("scaler.pkl")
     feature_columns = joblib.load("feature_columns.pkl")
-    default_values = joblib.load("default_values.pkl")  
+    default_values = joblib.load("default_values.pkl")
     return model, scaler, feature_columns, default_values
 
 model, scaler, feature_columns, default_values = load_assets()
+
+THRESHOLD = 30 
 
 # 2. Prediction Logic
 def predict_attrition(age, monthly_income, overtime, total_working_years, years_at_company, job_satisfaction, env_satisfaction):
@@ -32,12 +34,12 @@ def predict_attrition(age, monthly_income, overtime, total_working_years, years_
     # Convert to DataFrame ensuring correct column order
     input_df = pd.DataFrame([input_row])[feature_columns]
     
-    # Apply Scaling (دلوقتي متوافق فعلاً مع الموديل)
+    # Apply Scaling
     scaled_data = scaler.transform(input_df)
     
-    # Prediction
-    prediction = model.predict(scaled_data)[0]
-    probability = model.predict_proba(scaled_data)[0][1] * 100 
+   
+    probability = model.predict_proba(scaled_data)[0][1] * 100
+    prediction = 1 if probability >= THRESHOLD else 0
     
     if prediction == 1:
         return True, f"⚠️ High Risk: The employee is likely to leave ({probability:.1f}% probability)."
@@ -53,7 +55,7 @@ st.markdown("---")
 col1, col2 = st.columns(2)
 with col1:
     age = st.number_input("Age", min_value=18, max_value=60, value=30, step=1)
-    monthly_income = st.number_input("Monthly Income ($)", min_value=0, value=5000, step=100)
+    monthly_income = st.number_input("Monthly Income ($)", min_value=0, max_value=20000, value=5000, step=100)
     overtime = st.radio("Works OverTime?", options=["Yes", "No"], index=1, horizontal=True)
     total_working_years = st.number_input("Total Working Years", min_value=0, max_value=40, value=5, step=1)
 with col2:
