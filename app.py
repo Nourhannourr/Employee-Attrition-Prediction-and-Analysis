@@ -33,9 +33,9 @@ def predict_attrition(age, monthly_income, overtime, total_working_years, years_
     prediction = 1 if (probability / 100) <= best_threshold else 0  
     
     if prediction == 1:
-        return True, f"⚠️ High Risk: The employee is likely to leave ({probability:.1f}% probability)."
+        return True, f"⚠️ High Risk: The employee is likely to leave."
     else:
-        return False, f"✅ Low Risk: The employee is likely to stay ({probability:.1f}% probability)."
+        return False, f"✅ Low Risk: The employee is likely to stay."
 
 st.set_page_config(page_title="Employee Attrition Predictor", page_icon="💼", layout="centered")
 st.title("💼 Employee Attrition Predictor")
