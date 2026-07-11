@@ -30,7 +30,7 @@ def predict_attrition(age, monthly_income, overtime, total_working_years, years_
     scaled_data = scaler.transform(input_df)
     
     probability = model.predict_proba(scaled_data)[0][1] * 100
-    prediction = 1 if (probability / 100) <= best_threshold else 0  
+    prediction = 1 if (probability / 100) >= best_threshold else 0  
     
     if prediction == 1:
         return True, f"⚠️ High Risk: The employee is likely to leave."
