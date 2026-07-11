@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import joblib
 
+
 @st.cache_resource
 def load_assets():
     model = joblib.load("attrition_model.pkl")
