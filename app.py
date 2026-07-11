@@ -14,16 +14,20 @@ def load_assets():
     tenure_encoder = joblib.load("tenure_encoder.pkl")
     salary_bin_edges = joblib.load("salary_bin_edges.pkl")
     salary_encoder = joblib.load("salary_encoder.pkl")
+    categorical_encoders = joblib.load("categorical_encoders.pkl")
     return (model, scaler, feature_columns, default_values, best_threshold,
-            tenure_bins, tenure_encoder, salary_bin_edges, salary_encoder)
+            tenure_bins, tenure_encoder, salary_bin_edges, salary_encoder,
+            categorical_encoders)
 
 
 (model, scaler, feature_columns, default_values, best_threshold,
- tenure_bins, tenure_encoder, salary_bin_edges, salary_encoder) = load_assets()
+ tenure_bins, tenure_encoder, salary_bin_edges, salary_encoder,
+ categorical_encoders) = load_assets()
+
+marital_encoder = categorical_encoders["MaritalStatus"]
 
 
 def compute_tenure_group(years_at_company):
-    """Rebuild TenureGroup the same way it was built during training."""
     clipped = min(max(years_at_company, tenure_bins[0] + 1e-9), tenure_bins[-1])
     label = pd.cut([clipped], bins=tenure_bins,
                     labels=['New', 'Junior', 'Mid', 'Senior'])[0]
@@ -31,7 +35,6 @@ def compute_tenure_group(years_at_company):
 
 
 def compute_salary_band(monthly_income):
-    """Rebuild SalaryBand using the quantile edges captured at training time."""
     clipped = min(max(monthly_income, salary_bin_edges[0]), salary_bin_edges[-1])
     label = pd.cut([clipped], bins=salary_bin_edges,
                     labels=['Low', 'Medium', 'High'], include_lowest=True)[0]
@@ -39,7 +42,10 @@ def compute_salary_band(monthly_income):
 
 
 def predict_attrition(age, monthly_income, overtime, total_working_years,
-                       years_at_company, job_satisfaction, env_satisfaction):
+                       years_at_company, job_satisfaction, env_satisfaction,
+                       job_involvement, marital_status, num_companies_worked,
+                       years_in_current_role, years_since_last_promotion,
+                       distance_from_home):
 
     input_row = default_values.copy()
 
@@ -52,9 +58,14 @@ def predict_attrition(age, monthly_income, overtime, total_working_years,
     input_row["EnvironmentSatisfaction"] = env_satisfaction
     input_row["SalaryExperienceRatio"] = monthly_income / (total_working_years + 1)
 
-    # These two used to silently stay at their training-set default values,
-    # contradicting whatever the user entered above. Now they track the
-    # actual inputs.
+    # Previously frozen at training defaults, now live
+    input_row["JobInvolvement"] = job_involvement
+    input_row["MaritalStatus"] = marital_encoder.transform([marital_status])[0]
+    input_row["NumCompaniesWorked"] = num_companies_worked
+    input_row["YearsInCurrentRole"] = years_in_current_role
+    input_row["YearsSinceLastPromotion"] = years_since_last_promotion
+    input_row["DistanceFromHome"] = distance_from_home
+
     if "TenureGroup" in feature_columns:
         input_row["TenureGroup"] = compute_tenure_group(years_at_company)
     if "SalaryBand" in feature_columns:
@@ -83,16 +94,25 @@ with col1:
     monthly_income = st.number_input("Monthly Income ($)", min_value=0, max_value=20000, value=5000, step=100)
     overtime = st.radio("Works OverTime?", options=["Yes", "No"], index=1, horizontal=True)
     total_working_years = st.number_input("Total Working Years", min_value=0, max_value=40, value=5, step=1)
-with col2:
     years_at_company = st.number_input("Years at Company", min_value=0, max_value=40, value=3, step=1)
     job_satisfaction = st.number_input("Job Satisfaction (1: Low - 4: Excellent)", min_value=1, max_value=4, value=3, step=1)
     env_satisfaction = st.number_input("Environment Satisfaction (1: Low - 4: Excellent)", min_value=1, max_value=4, value=3, step=1)
+with col2:
+    job_involvement = st.number_input("Job Involvement (1: Low - 4: High)", min_value=1, max_value=4, value=3, step=1)
+    marital_status = st.selectbox("Marital Status", options=list(marital_encoder.classes_))
+    num_companies_worked = st.number_input("Number of Companies Worked At", min_value=0, max_value=15, value=1, step=1)
+    years_in_current_role = st.number_input("Years in Current Role", min_value=0, max_value=20, value=2, step=1)
+    years_since_last_promotion = st.number_input("Years Since Last Promotion", min_value=0, max_value=15, value=1, step=1)
+    distance_from_home = st.number_input("Distance From Home (miles)", min_value=0, max_value=50, value=5, step=1)
 
 st.markdown("---")
 if st.button("Predict Attrition", use_container_width=True):
     is_leaving, message = predict_attrition(
         age, monthly_income, overtime, total_working_years,
-        years_at_company, job_satisfaction, env_satisfaction
+        years_at_company, job_satisfaction, env_satisfaction,
+        job_involvement, marital_status, num_companies_worked,
+        years_in_current_role, years_since_last_promotion,
+        distance_from_home
     )
 
     if is_leaving:
